@@ -42,7 +42,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! terrand = { version = "0.1", features = ["parallel"] }
+//! terrand = { package = "terrand-rs", version = "0.1", features = ["parallel"] }
 //! ```
 //!
 //! # NaN and nodata handling
