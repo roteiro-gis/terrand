@@ -57,7 +57,8 @@ impl Default for ViewshedConfig {
 /// # Errors
 ///
 /// Returns [`Error::ObserverOutOfBounds`] if the observer position is outside
-/// the DEM grid.
+/// the DEM grid. Returns [`Error::InvalidViewshedMaxDistance`] if
+/// `config.max_distance` is zero, negative, NaN, or negative infinity.
 ///
 /// # Examples
 ///
@@ -87,6 +88,9 @@ pub fn viewshed(
             width: w,
         });
     }
+    if config.max_distance <= 0.0 || config.max_distance.is_nan() {
+        return Err(Error::InvalidViewshedMaxDistance(config.max_distance));
+    }
 
     let mut result = Array2::zeros((h, w));
     result[[observer_row, observer_col]] = 1.0;
@@ -95,10 +99,16 @@ pub fn viewshed(
 
     // Determine search radius in cells.
     let cell_ground = cell_size.x().max(cell_size.y());
-    let radius_cells = if config.max_distance.is_finite() && config.max_distance > 0.0 {
-        (config.max_distance / cell_ground).ceil() as isize
+    let max_grid_radius = h.max(w) as isize;
+    let radius_cells = if config.max_distance.is_infinite() {
+        max_grid_radius
     } else {
-        h.max(w) as isize
+        let cells = (config.max_distance / cell_ground).ceil();
+        if cells >= max_grid_radius as f64 {
+            max_grid_radius
+        } else {
+            cells as isize
+        }
     };
 
     // Build perimeter of the search square.
@@ -287,6 +297,43 @@ mod tests {
         let dem = Array2::from_elem((8, 8), 10.0);
         let config = ViewshedConfig::default();
         assert!(viewshed(&dem, CellSize::square(1.0).unwrap(), 10, 10, &config).is_err());
+    }
+
+    #[test]
+    fn invalid_max_distance_is_rejected() {
+        let dem = Array2::from_elem((8, 8), 10.0);
+        for max_distance in [0.0, -1.0, f64::NAN, f64::NEG_INFINITY] {
+            let config = ViewshedConfig {
+                max_distance,
+                ..Default::default()
+            };
+            assert!(
+                matches!(
+                    viewshed(&dem, CellSize::square(1.0).unwrap(), 4, 4, &config),
+                    Err(Error::InvalidViewshedMaxDistance(v))
+                        if v == max_distance || (v.is_nan() && max_distance.is_nan())
+                ),
+                "accepted max_distance {max_distance}"
+            );
+        }
+    }
+
+    #[test]
+    fn finite_radius_is_capped_to_grid_extent() {
+        let dem = Array2::from_elem((8, 8), 10.0);
+        let config = ViewshedConfig {
+            max_distance: 1.0,
+            ..Default::default()
+        };
+        let vis = viewshed(
+            &dem,
+            CellSize::square(f64::MIN_POSITIVE).unwrap(),
+            4,
+            4,
+            &config,
+        )
+        .unwrap();
+        assert_eq!(vis[[4, 4]], 1.0);
     }
 
     #[test]
