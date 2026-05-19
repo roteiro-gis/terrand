@@ -9,6 +9,19 @@ and contours.
 `CellSize` stores positive finite grid spacing. Raster I/O, GDAL integration,
 reprojection, resampling, and vertical datum handling are outside the crate.
 
+## Installation
+
+```sh
+cargo add terrand-rs --rename terrand
+```
+
+Or add the dependency directly:
+
+```toml
+[dependencies]
+terrand = { package = "terrand-rs", version = "0.1" }
+```
+
 ```rust
 use ndarray::Array2;
 use terrand::{hillshade, slope, CellSize};

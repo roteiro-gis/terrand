@@ -1,13 +1,18 @@
 [package]
-name = "terrand"
+name = "terrand-rs"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.77"
 license = "MIT OR Apache-2.0"
 description = "Pure-Rust terrain analysis on ndarray: slope, aspect, curvature, hillshade, hydrology, viewshed, and contour generation"
 repository = "https://github.com/i-norden/terrand"
+documentation = "https://docs.rs/terrand-rs"
 keywords = ["terrain", "dem", "geospatial", "ndarray", "gis"]
 categories = ["science::geo", "algorithms"]
+
+[lib]
+name = "terrand"
+path = "src/lib.rs"
 
 [dependencies]
 ndarray = "0.17"
