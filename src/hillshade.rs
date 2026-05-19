@@ -43,7 +43,7 @@ use crate::kernel::{grid_map, horn_gradients};
 /// use terrand::{hillshade, CellSize};
 ///
 /// let dem = Array2::from_elem((100, 100), 500.0);
-/// let hs = hillshade(&dem, CellSize::square(30.0), 315.0, 45.0);
+/// let hs = hillshade(&dem, CellSize::square(30.0).unwrap(), 315.0, 45.0);
 /// // Flat surface: shade = cos(zenith) * 255 ≈ 180.3
 /// assert!((hs[[50, 50]] - 180.3).abs() < 1.0);
 /// ```
@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn flat_surface_uniform() {
         let dem = Array2::from_elem((10, 10), 100.0);
-        let hs = hillshade(&dem, CellSize::square(1.0), 315.0, 45.0);
+        let hs = hillshade(&dem, CellSize::square(1.0).unwrap(), 315.0, 45.0);
         let first = hs[[1, 1]];
         for r in 1..9 {
             for c in 1..9 {
@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn small_grid_returns_flat_illumination() {
         let dem = Array2::from_elem((2, 2), 100.0);
-        let hs = hillshade(&dem, CellSize::square(1.0), 315.0, 45.0);
+        let hs = hillshade(&dem, CellSize::square(1.0).unwrap(), 315.0, 45.0);
         assert!(hs[[0, 0]] > 0.0);
     }
 
@@ -121,7 +121,7 @@ mod tests {
         let dem = Array2::from_shape_fn((20, 20), |(r, c)| {
             (r as f64 * 10.0 + c as f64).sin() * 100.0
         });
-        let hs = hillshade(&dem, CellSize::square(30.0), 315.0, 45.0);
+        let hs = hillshade(&dem, CellSize::square(30.0).unwrap(), 315.0, 45.0);
         for &v in hs.iter() {
             assert!((0.0..=255.0).contains(&v), "hillshade {v} out of [0, 255]");
         }
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn slope_changes_illumination() {
         let dem = Array2::from_shape_fn((10, 10), |(_, c)| c as f64 * 10.0);
-        let hs = hillshade(&dem, CellSize::square(1.0), 315.0, 45.0);
+        let hs = hillshade(&dem, CellSize::square(1.0).unwrap(), 315.0, 45.0);
         let v = hs[[5, 5]];
         assert!((0.0..=255.0).contains(&v));
     }

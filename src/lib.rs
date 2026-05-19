@@ -28,7 +28,7 @@
 //!
 //! // A synthetic DEM with a uniform east-facing slope.
 //! let dem = Array2::from_shape_fn((100, 100), |(_, c)| c as f64 * 10.0);
-//! let cell = CellSize::square(30.0);
+//! let cell = CellSize::square(30.0).unwrap();
 //!
 //! let s = slope(&dem, cell);
 //! let a = aspect(&dem, cell);

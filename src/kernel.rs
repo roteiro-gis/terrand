@@ -98,8 +98,7 @@ pub(crate) fn get_clamped(dem: &Array2<f64>, row: usize, col: usize, dy: isize, 
 /// Compute the Horn algorithm gradients (dz/dx, dz/dy) at a single pixel.
 ///
 /// Uses the standard 3x3 weighted kernel with GDAL-compatible linear
-/// extrapolation at grid edges. Returns `(0.0, 0.0)` when the corresponding
-/// cell size component is zero.
+/// extrapolation at grid edges.
 ///
 /// # 3x3 kernel layout
 ///
@@ -129,17 +128,8 @@ pub(crate) fn horn_gradients(
     let h = g(1, 0);
     let i = g(1, 1);
 
-    let dzdx = if cs.x.abs() < f64::EPSILON {
-        0.0
-    } else {
-        ((c + 2.0 * f + i) - (a + 2.0 * d + gv)) / (8.0 * cs.x)
-    };
-
-    let dzdy = if cs.y.abs() < f64::EPSILON {
-        0.0
-    } else {
-        ((gv + 2.0 * h + i) - (a + 2.0 * b + c)) / (8.0 * cs.y)
-    };
+    let dzdx = ((c + 2.0 * f + i) - (a + 2.0 * d + gv)) / (8.0 * cs.x());
+    let dzdy = ((gv + 2.0 * h + i) - (a + 2.0 * b + c)) / (8.0 * cs.y());
 
     (dzdx, dzdy)
 }
@@ -171,23 +161,9 @@ pub(crate) fn horn_second_derivatives(
     let h = g(1, 0);
     let i = g(1, 1);
 
-    let d2zdx2 = if cs.x.abs() < f64::EPSILON {
-        0.0
-    } else {
-        (d - 2.0 * e + f) / (cs.x * cs.x)
-    };
-
-    let d2zdy2 = if cs.y.abs() < f64::EPSILON {
-        0.0
-    } else {
-        (b - 2.0 * e + h) / (cs.y * cs.y)
-    };
-
-    let d2zdxdy = if cs.x.abs() < f64::EPSILON || cs.y.abs() < f64::EPSILON {
-        0.0
-    } else {
-        ((c + gv) - (a + i)) / (4.0 * cs.x * cs.y)
-    };
+    let d2zdx2 = (d - 2.0 * e + f) / (cs.x() * cs.x());
+    let d2zdy2 = (b - 2.0 * e + h) / (cs.y() * cs.y());
+    let d2zdxdy = ((c + gv) - (a + i)) / (4.0 * cs.x() * cs.y());
 
     (d2zdx2, d2zdy2, d2zdxdy)
 }
@@ -216,7 +192,7 @@ mod tests {
     #[test]
     fn test_horn_gradients_flat() {
         let dem = Array2::from_elem((5, 5), 100.0);
-        let (dzdx, dzdy) = horn_gradients(&dem, 2, 2, CellSize::square(1.0));
+        let (dzdx, dzdy) = horn_gradients(&dem, 2, 2, CellSize::square(1.0).unwrap());
         assert!(dzdx.abs() < 1e-10);
         assert!(dzdy.abs() < 1e-10);
     }
@@ -225,7 +201,7 @@ mod tests {
     fn test_horn_gradients_x_slope() {
         // Rising 10 units per column
         let dem = Array2::from_shape_fn((5, 5), |(_, c)| c as f64 * 10.0);
-        let (dzdx, dzdy) = horn_gradients(&dem, 2, 2, CellSize::square(1.0));
+        let (dzdx, dzdy) = horn_gradients(&dem, 2, 2, CellSize::square(1.0).unwrap());
         assert!((dzdx - 10.0).abs() < 1e-6, "dzdx should be 10, got {dzdx}");
         assert!(dzdy.abs() < 1e-6, "dzdy should be ~0, got {dzdy}");
     }
@@ -233,7 +209,7 @@ mod tests {
     #[test]
     fn test_horn_second_derivatives_flat() {
         let dem = Array2::from_elem((5, 5), 100.0);
-        let (d2x, d2y, d2xy) = horn_second_derivatives(&dem, 2, 2, CellSize::square(1.0));
+        let (d2x, d2y, d2xy) = horn_second_derivatives(&dem, 2, 2, CellSize::square(1.0).unwrap());
         assert!(d2x.abs() < 1e-10);
         assert!(d2y.abs() < 1e-10);
         assert!(d2xy.abs() < 1e-10);
@@ -243,7 +219,7 @@ mod tests {
     fn test_horn_second_derivatives_parabolic() {
         // z = x^2 => d2z/dx2 = 2
         let dem = Array2::from_shape_fn((5, 5), |(_, c)| (c as f64).powi(2));
-        let (d2x, _, _) = horn_second_derivatives(&dem, 2, 2, CellSize::square(1.0));
+        let (d2x, _, _) = horn_second_derivatives(&dem, 2, 2, CellSize::square(1.0).unwrap());
         assert!(
             (d2x - 2.0).abs() < 1e-6,
             "d2z/dx2 of x^2 should be 2, got {d2x}"

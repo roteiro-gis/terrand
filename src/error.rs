@@ -3,6 +3,10 @@ use thiserror::Error;
 /// Errors returned by terrand operations.
 #[derive(Error, Debug)]
 pub enum Error {
+    /// Cell dimensions must be positive finite values.
+    #[error("cell dimensions must be positive and finite, got x={x}, y={y}")]
+    InvalidCellSize { x: f64, y: f64 },
+
     /// Observer position is outside the DEM grid.
     #[error("observer position ({row}, {col}) is outside grid of size ({height}, {width})")]
     ObserverOutOfBounds {

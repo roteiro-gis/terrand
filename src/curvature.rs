@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn flat_dem() {
         let dem = Array2::from_elem((10, 10), 100.0);
-        let cs = CellSize::square(1.0);
+        let cs = CellSize::square(1.0).unwrap();
         for grid in [
             profile_curvature(&dem, cs),
             plan_curvature(&dem, cs),
@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn linear_slope_has_zero_curvature() {
         let dem = Array2::from_shape_fn((10, 10), |(_, c)| c as f64);
-        let cs = CellSize::square(1.0);
+        let cs = CellSize::square(1.0).unwrap();
         for grid in [
             profile_curvature(&dem, cs),
             plan_curvature(&dem, cs),
@@ -127,7 +127,7 @@ mod tests {
     fn parabolic_general_curvature() {
         // z = x^2 + y^2 => d2z/dx2 = 2, d2z/dy2 = 2 => general = -(2+2) = -4
         let dem = Array2::from_shape_fn((10, 10), |(r, c)| (c as f64).powi(2) + (r as f64).powi(2));
-        let g = general_curvature(&dem, CellSize::square(1.0));
+        let g = general_curvature(&dem, CellSize::square(1.0).unwrap());
         let v = g[[5, 5]];
         assert!(
             (v - (-4.0)).abs() < 0.1,
@@ -138,7 +138,7 @@ mod tests {
     #[test]
     fn small_grid_returns_zeros() {
         let dem = Array2::from_elem((2, 2), 50.0);
-        let cs = CellSize::square(1.0);
+        let cs = CellSize::square(1.0).unwrap();
         for grid in [
             profile_curvature(&dem, cs),
             plan_curvature(&dem, cs),
