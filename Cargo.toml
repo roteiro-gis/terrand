@@ -1,0 +1,19 @@
+[package]
+name = "terrand"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+license = "MIT OR Apache-2.0"
+description = "Pure-Rust terrain analysis on ndarray: slope, aspect, curvature, hillshade, hydrology, viewshed, and contour generation"
+repository = "https://github.com/i-norden/terrand"
+keywords = ["terrain", "dem", "geospatial", "ndarray", "gis"]
+categories = ["science::geo", "algorithms"]
+
+[dependencies]
+ndarray = "0.17"
+thiserror = "2"
+rayon = { version = "1", optional = true }
+
+[features]
+default = []
+parallel = ["rayon"]
