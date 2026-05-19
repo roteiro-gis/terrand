@@ -13,7 +13,8 @@
 //!
 //! # NaN handling
 //!
-//! Input NaN cells propagate to NaN in the output.
+//! On grids at least 3x3, input NaN cells propagate to NaN in the output.
+//! Grids smaller than 3x3 use the documented flat-illumination fallback.
 
 use ndarray::Array2;
 

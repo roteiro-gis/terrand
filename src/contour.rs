@@ -10,6 +10,11 @@
 //! Each 2x2 cell quad is classified into one of 16 marching-squares cases.
 //! Contour crossings are linearly interpolated along cell edges, then connected
 //! into polylines using an endpoint hash map for O(n) assembly.
+//!
+//! # NaN handling
+//!
+//! NaN cells are treated as nodata holes. They are ignored when determining
+//! the contour elevation range, and any 2x2 quad containing NaN is skipped.
 
 use std::collections::HashMap;
 

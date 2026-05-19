@@ -45,11 +45,14 @@
 //! terrand = { version = "0.1", features = ["parallel"] }
 //! ```
 //!
-//! # NaN handling
+//! # NaN and nodata handling
 //!
-//! All operations propagate `NaN` naturally: if an input cell or any cell in
-//! its computation neighborhood is `NaN`, the output is `NaN`. This allows
-//! nodata values to flow through without explicit masking.
+//! NaN handling is operation-specific. Surface-analysis kernels generally
+//! propagate `NaN` through their 3x3 arithmetic on normal-size grids, but their
+//! small-grid fallbacks return documented flat values. Hydrology treats `NaN`
+//! as nodata for elevation rasters: `fill` leaves `NaN` cells unchanged, while
+//! `flow_direction` encodes `NaN` cells as direction `0`. Contour generation
+//! treats `NaN` cells as holes and skips quads containing them.
 //!
 //! # Algorithms
 //!

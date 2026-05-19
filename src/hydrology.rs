@@ -24,6 +24,14 @@
 //! ```
 //!
 //! A value of 0 indicates a pit or flat area with no downslope neighbor.
+//!
+//! # NaN and nodata handling
+//!
+//! `fill` treats NaN input cells as nodata and leaves them unchanged. Finite
+//! cells touching nodata are treated as outlets for their finite-data region.
+//! `flow_direction` encodes NaN cells as direction `0` and ignores NaN
+//! neighbors. Later hydrology functions operate on numeric direction,
+//! accumulation, or label grids and do not carry a separate nodata mask.
 
 use ndarray::Array2;
 use std::collections::VecDeque;
