@@ -3,7 +3,7 @@
 //! Three standard roughness metrics are provided:
 //!
 //! - **TRI** ([`tri`]): Terrain Ruggedness Index (Riley et al. 1999). The
-//!   square root of the mean of squared elevation differences between the center
+//!   square root of the sum of squared elevation differences between the center
 //!   cell and its 8 neighbors.
 //!
 //! - **TPI** ([`tpi`]): Topographic Position Index. The difference between the
