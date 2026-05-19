@@ -151,45 +151,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 - Contour coordinates are in grid space `(col, row)`. Apply your raster affine
   transform externally to get map coordinates.
 
-## Positioning
-
-Rust already has terrain options. `oxigdal-terrain` is a broader terrain
-module in the OxiGDAL ecosystem, `surtgis-algorithms` exposes a large
-collection of terrain, morphometric, visibility, smoothing, solar, and
-streaming algorithms, and GDAL bindings give Rust access to GDAL's mature
-raster toolchain.
-
-`terrand` is intentionally narrower. Its niche is:
-
-- small dependency surface: `ndarray`, `thiserror`, and optional `rayon`
-- pure Rust, with no GDAL runtime or C build dependency
-- direct `Array2<f64>` APIs instead of dataset, driver, or processing-framework
-  abstractions
-- kernels that are easy to compose inside the `geotiff-rust` + `terrand` +
-  `eikonal` stack
-- predictable building blocks for library code, tests, services, and tools
-  that already own raster I/O and CRS handling elsewhere
-
-`terrand` answers terrain-description questions: "what is the slope here?",
-"which way does water flow?", "what cells are visible?", and "where do
-contours cross this DEM?"
-
-`eikonal` answers cost-propagation and routing questions: "how far or expensive
-is every cell from this source?", "what is the weighted shortest path?", and
-"what is the isochrone boundary?"
-
-They compose cleanly. For example, use `terrand::slope_radians` to derive a
-slope raster, then pass it into `eikonal::CostField::from_slope` to build a
-terrain-aware travel-cost field. Use `terrand` when you need deterministic DEM
-attributes; use `eikonal` when you need distance fields, paths, or reachability
-over a cost surface.
-
-Choose a broader terrain suite when you need many specialized geomorphometry
-algorithms, streaming framework integration, or an all-in-one geospatial stack.
-Choose GDAL bindings when you want GDAL's raster formats, warping, and command
-parity. Choose `terrand` when the useful unit is a small Rust crate that takes
-and returns ndarrays.
-
 ## Algorithms and Behavior
 
 - Surface kernels use Horn-style 3x3 derivatives with GDAL-compatible edge
