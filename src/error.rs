@@ -16,6 +16,10 @@ pub enum Error {
         width: usize,
     },
 
+    /// Viewshed maximum distance must be positive and finite, or positive infinity.
+    #[error("viewshed max_distance must be positive and finite, or infinity, got {0}")]
+    InvalidViewshedMaxDistance(f64),
+
     /// Contour interval is not a positive, finite number.
     #[error("contour interval must be positive and finite, got {0}")]
     InvalidContourInterval(f64),
