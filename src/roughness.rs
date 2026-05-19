@@ -15,7 +15,9 @@
 //!
 //! # NaN handling
 //!
-//! If the center cell or any neighbor is NaN, the output is NaN for that cell.
+//! On grids at least 3x3, if the center cell or any neighbor is NaN, the
+//! output is NaN for that cell. Grids smaller than 3x3 use the documented flat
+//! fallback and return zeros.
 
 use ndarray::Array2;
 
@@ -87,10 +89,16 @@ pub fn roughness(dem: &Array2<f64>) -> Array2<f64> {
     }
     grid_map(h, w, |row, col| {
         let center = dem[[row, col]];
+        if center.is_nan() {
+            return f64::NAN;
+        }
         let mut min_val = center;
         let mut max_val = center;
         for &(dy, dx) in &OFFSETS {
             let n = get_clamped(dem, row, col, dy, dx);
+            if n.is_nan() {
+                return f64::NAN;
+            }
             if n < min_val {
                 min_val = n;
             }
@@ -163,5 +171,14 @@ mod tests {
                 assert!(v.abs() < 1e-10);
             }
         }
+    }
+
+    #[test]
+    fn nan_neighbor_propagates_on_normal_grid() {
+        let mut dem = Array2::from_elem((5, 5), 50.0);
+        dem[[2, 3]] = f64::NAN;
+        assert!(tri(&dem)[[2, 2]].is_nan());
+        assert!(tpi(&dem)[[2, 2]].is_nan());
+        assert!(roughness(&dem)[[2, 2]].is_nan());
     }
 }

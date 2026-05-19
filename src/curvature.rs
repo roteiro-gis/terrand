@@ -18,7 +18,8 @@
 //!
 //! # NaN handling
 //!
-//! Input NaN cells propagate to NaN in the output.
+//! On grids at least 3x3, input NaN cells propagate to NaN in the output.
+//! Grids smaller than 3x3 use the documented flat fallback and return zeros.
 
 use ndarray::Array2;
 
