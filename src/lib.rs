@@ -11,14 +11,14 @@
 //!
 //! | Module | Operations |
 //! |--------|-----------|
-//! | [`slope`](slope) | Slope in degrees, radians, or percent |
-//! | [`aspect`](aspect) | Slope direction as compass bearing |
-//! | [`curvature`](curvature) | Profile, plan, and general curvature |
-//! | [`hillshade`](hillshade) | Shaded-relief illumination |
-//! | [`roughness`](roughness) | TRI, TPI, and surface roughness |
-//! | [`hydrology`](hydrology) | Fill, flow direction, accumulation, watershed, basin, stream order |
-//! | [`viewshed`](viewshed) | Line-of-sight visibility analysis |
-//! | [`contour`](contour) | Marching-squares contour generation |
+//! | [`slope`](mod@slope) | Slope in degrees, radians, or percent |
+//! | [`aspect`](mod@aspect) | Slope direction as compass bearing |
+//! | [`curvature`](mod@curvature) | Profile, plan, and general curvature |
+//! | [`hillshade`](mod@hillshade) | Shaded-relief illumination |
+//! | [`roughness`](mod@roughness) | TRI, TPI, and surface roughness |
+//! | [`hydrology`](mod@hydrology) | Fill, flow direction, accumulation, watershed, basin, stream order |
+//! | [`viewshed`](mod@viewshed) | Line-of-sight visibility analysis |
+//! | [`contour`](mod@contour) | Marching-squares contour generation |
 //!
 //! # Quick start
 //!
