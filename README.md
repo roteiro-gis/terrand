@@ -1,11 +1,13 @@
 # terrand
 
-Pure-Rust terrain analysis kernels for regular 2D DEM grids.
+Small, pure-Rust terrain analysis kernels for regular 2D DEM grids.
 
-`terrand` is the array-first terrain companion to raster I/O and routing
-crates: give it an `ndarray::Array2<f64>` plus a validated `CellSize`, and it
-returns derived rasters or grid-space contour lines. It does not depend on
-GDAL, define a file format, or perform CRS transformations.
+`terrand` is the ndarray-first terrain layer for a lightweight raster analysis
+stack: `geotiff-rust` for GeoTIFF/COG I/O, `terrand` for DEM-derived rasters,
+and `eikonal` for distance fields and routing. Give it an
+`ndarray::Array2<f64>` plus a validated `CellSize`, and it returns derived
+rasters or grid-space contour lines. It does not depend on GDAL, define a file
+format, or perform CRS transformations.
 
 Use it for:
 
@@ -148,22 +150,6 @@ fn main() -> Result<(), Box<dyn Error>> {
   products are numeric grids without a separate nodata mask.
 - Contour coordinates are in grid space `(col, row)`. Apply your raster affine
   transform externally to get map coordinates.
-
-## Positioning
-
-`terrand` answers terrain-description questions: "what is the slope here?",
-"which way does water flow?", "what cells are visible?", and "where do
-contours cross this DEM?"
-
-`eikonal` answers cost-propagation and routing questions: "how far or expensive
-is every cell from this source?", "what is the weighted shortest path?", and
-"what is the isochrone boundary?"
-
-They compose cleanly. For example, use `terrand::slope_radians` to derive a
-slope raster, then pass it into `eikonal::CostField::from_slope` to build a
-terrain-aware travel-cost field. Use `terrand` when you need deterministic DEM
-attributes; use `eikonal` when you need distance fields, paths, or reachability
-over a cost surface.
 
 ## Algorithms and Behavior
 
