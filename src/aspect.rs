@@ -35,7 +35,7 @@ pub const ASPECT_FLAT: f64 = -1.0;
 ///
 /// // Flat DEM: all aspects are -1
 /// let dem = Array2::from_elem((10, 10), 100.0);
-/// let a = aspect(&dem, CellSize::square(30.0));
+/// let a = aspect(&dem, CellSize::square(30.0).unwrap());
 /// assert_eq!(a[[5, 5]], ASPECT_FLAT);
 /// ```
 pub fn aspect(dem: &Array2<f64>, cell_size: CellSize) -> Array2<f64> {
@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn flat_dem_returns_sentinel() {
         let dem = Array2::from_elem((10, 10), 100.0);
-        let a = aspect(&dem, CellSize::square(1.0));
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         for &v in a.iter() {
             assert_eq!(v, ASPECT_FLAT, "flat DEM should have aspect -1");
         }
@@ -80,7 +80,7 @@ mod tests {
     fn east_increasing_faces_west() {
         // DEM rising east => downhill faces west (270)
         let dem = Array2::from_shape_fn((10, 10), |(_, c)| c as f64 * 10.0);
-        let a = aspect(&dem, CellSize::square(1.0));
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         let v = a[[5, 5]];
         assert!(
             (v - 270.0).abs() < 1.0,
@@ -92,7 +92,7 @@ mod tests {
     fn north_increasing_faces_south() {
         // DEM rising north (row 0 = high)
         let dem = Array2::from_shape_fn((10, 10), |(r, _)| (9 - r) as f64 * 10.0);
-        let a = aspect(&dem, CellSize::square(1.0));
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         let v = a[[5, 5]];
         assert!(
             (v - 180.0).abs() < 1.0,
@@ -105,7 +105,7 @@ mod tests {
         let dem = Array2::from_shape_fn((20, 20), |(r, c)| {
             (r as f64 * 2.0 + c as f64 * 3.0).sin() * 50.0
         });
-        let a = aspect(&dem, CellSize::square(1.0));
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         for &v in a.iter() {
             assert!(
                 v == ASPECT_FLAT || (0.0..360.0).contains(&v),
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn small_grid_returns_flat() {
         let dem = Array2::from_elem((2, 2), 50.0);
-        let a = aspect(&dem, CellSize::square(1.0));
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         for &v in a.iter() {
             assert_eq!(v, ASPECT_FLAT);
         }
@@ -126,8 +126,8 @@ mod tests {
     #[test]
     fn consistency_with_slope() {
         let dem = Array2::from_elem((10, 10), 42.0);
-        let s = crate::slope(&dem, CellSize::square(1.0));
-        let a = aspect(&dem, CellSize::square(1.0));
+        let s = crate::slope(&dem, CellSize::square(1.0).unwrap());
+        let a = aspect(&dem, CellSize::square(1.0).unwrap());
         for r in 0..10 {
             for c in 0..10 {
                 if s[[r, c]].abs() < 1e-6 {

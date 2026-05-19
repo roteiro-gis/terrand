@@ -32,7 +32,7 @@ use crate::kernel::{grid_map, horn_gradients};
 /// use terrand::{slope, CellSize};
 ///
 /// let dem = Array2::from_elem((10, 10), 100.0);
-/// let result = slope(&dem, CellSize::square(30.0));
+/// let result = slope(&dem, CellSize::square(30.0).unwrap());
 /// assert!(result[[5, 5]].abs() < 1e-6); // flat
 /// ```
 pub fn slope(dem: &Array2<f64>, cell_size: CellSize) -> Array2<f64> {
@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn flat_dem_is_zero() {
         let dem = Array2::from_elem((10, 10), 100.0);
-        let s = slope(&dem, CellSize::square(1.0));
+        let s = slope(&dem, CellSize::square(1.0).unwrap());
         for &v in s.iter() {
             assert!(v.abs() < 1e-6, "flat DEM slope should be 0, got {v}");
         }
@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn uniform_gradient() {
         let dem = Array2::from_shape_fn((10, 10), |(_, c)| c as f64 * 10.0);
-        let s = slope(&dem, CellSize::square(1.0));
+        let s = slope(&dem, CellSize::square(1.0).unwrap());
         let interior = s[[5, 5]];
         assert!(interior > 0.0);
         for row in 2..8 {
@@ -109,7 +109,7 @@ mod tests {
     fn range_check() {
         let dem =
             Array2::from_shape_fn((20, 20), |(r, c)| (r as f64 * 3.0 + c as f64).sin() * 100.0);
-        let s = slope(&dem, CellSize::square(1.0));
+        let s = slope(&dem, CellSize::square(1.0).unwrap());
         for &v in s.iter() {
             assert!((0.0..=90.0).contains(&v), "slope {v} out of [0, 90]");
         }
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn small_grid_returns_zeros() {
         let dem = Array2::from_elem((2, 2), 50.0);
-        let s = slope(&dem, CellSize::square(1.0));
+        let s = slope(&dem, CellSize::square(1.0).unwrap());
         for &v in s.iter() {
             assert!(v.abs() < 1e-10);
         }
@@ -127,8 +127,8 @@ mod tests {
     #[test]
     fn radians_matches_degrees() {
         let dem = Array2::from_shape_fn((10, 10), |(r, c)| (r as f64 + c as f64) * 5.0);
-        let deg = slope(&dem, CellSize::square(1.0));
-        let rad = slope_radians(&dem, CellSize::square(1.0));
+        let deg = slope(&dem, CellSize::square(1.0).unwrap());
+        let rad = slope_radians(&dem, CellSize::square(1.0).unwrap());
         for r in 0..10 {
             for c in 0..10 {
                 let expected = deg[[r, c]].to_radians();
@@ -146,7 +146,7 @@ mod tests {
         // dz/dx = 1.0 => atan(1) = 45 deg => percent = 100
         // With Horn kernel on a grid where z = x*1.0, dzdx = 1.0
         let dem = Array2::from_shape_fn((10, 10), |(_, c)| c as f64);
-        let pct = slope_percent(&dem, CellSize::square(1.0));
+        let pct = slope_percent(&dem, CellSize::square(1.0).unwrap());
         let v = pct[[5, 5]];
         assert!(
             (v - 100.0).abs() < 1.0,

@@ -67,7 +67,7 @@ impl Default for ViewshedConfig {
 ///
 /// let dem = Array2::from_elem((50, 50), 100.0);
 /// let config = ViewshedConfig { max_distance: 500.0, ..Default::default() };
-/// let vis = viewshed(&dem, CellSize::square(10.0), 25, 25, &config).unwrap();
+/// let vis = viewshed(&dem, CellSize::square(10.0).unwrap(), 25, 25, &config).unwrap();
 /// assert_eq!(vis[[25, 25]], 1.0); // observer is always visible
 /// ```
 pub fn viewshed(
@@ -94,7 +94,7 @@ pub fn viewshed(
     let observer_elev = dem[[observer_row, observer_col]] + config.observer_height;
 
     // Determine search radius in cells.
-    let cell_ground = cell_size.x.abs().max(cell_size.y.abs());
+    let cell_ground = cell_size.x().max(cell_size.y());
     let radius_cells = if config.max_distance.is_finite() && config.max_distance > 0.0 {
         (config.max_distance / cell_ground).ceil() as isize
     } else {
@@ -177,8 +177,8 @@ fn cast_ray(
     let mut max_slope = f64::NEG_INFINITY;
 
     for &(row, col) in cells.iter().skip(1) {
-        let dx = (col as f64 - obs.col as f64) * cell_size.x;
-        let dy = (row as f64 - obs.row as f64) * cell_size.y;
+        let dx = (col as f64 - obs.col as f64) * cell_size.x();
+        let dy = (row as f64 - obs.row as f64) * cell_size.y();
         let distance = (dx * dx + dy * dy).sqrt();
 
         if config.max_distance.is_finite() && distance > config.max_distance {
@@ -250,7 +250,7 @@ mod tests {
             max_distance: 10.0,
             ..Default::default()
         };
-        let vis = viewshed(&dem, CellSize::square(1.0), 8, 8, &config).unwrap();
+        let vis = viewshed(&dem, CellSize::square(1.0).unwrap(), 8, 8, &config).unwrap();
         assert_eq!(vis[[8, 8]], 1.0);
         // Nearby cells should be visible on a flat surface.
         assert_eq!(vis[[8, 9]], 1.0);
@@ -268,7 +268,7 @@ mod tests {
             refraction_coeff: 0.0,
             ..Default::default()
         };
-        let vis = viewshed(&dem, CellSize::square(1.0), 7, 5, &config).unwrap();
+        let vis = viewshed(&dem, CellSize::square(1.0).unwrap(), 7, 5, &config).unwrap();
         assert_eq!(vis[[7, 5]], 1.0, "observer should be visible");
         assert_eq!(vis[[7, 12]], 0.0, "cell behind wall should not be visible");
         assert_eq!(vis[[7, 3]], 1.0, "cell on observer side should be visible");
@@ -278,7 +278,7 @@ mod tests {
     fn observer_at_edge() {
         let dem = Array2::from_elem((8, 8), 10.0);
         let config = ViewshedConfig::default();
-        let vis = viewshed(&dem, CellSize::square(1.0), 0, 0, &config).unwrap();
+        let vis = viewshed(&dem, CellSize::square(1.0).unwrap(), 0, 0, &config).unwrap();
         assert_eq!(vis[[0, 0]], 1.0);
     }
 
@@ -286,7 +286,7 @@ mod tests {
     fn observer_out_of_bounds() {
         let dem = Array2::from_elem((8, 8), 10.0);
         let config = ViewshedConfig::default();
-        assert!(viewshed(&dem, CellSize::square(1.0), 10, 10, &config).is_err());
+        assert!(viewshed(&dem, CellSize::square(1.0).unwrap(), 10, 10, &config).is_err());
     }
 
     #[test]
@@ -298,7 +298,7 @@ mod tests {
             refraction_coeff: 0.0,
             ..Default::default()
         };
-        let vis = viewshed(&dem, CellSize::square(1.0), 7, 8, &config).unwrap();
+        let vis = viewshed(&dem, CellSize::square(1.0).unwrap(), 7, 8, &config).unwrap();
         assert_eq!(vis[[7, 8]], 1.0);
         assert_eq!(vis[[7, 13]], 0.0, "distant cell should not be visible");
     }
