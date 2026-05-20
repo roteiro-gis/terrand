@@ -1,3 +1,5 @@
+//! Cell-size metadata for regular DEM grids.
+
 use crate::error::{Error, Result};
 
 /// Cell dimensions of a regular grid.
