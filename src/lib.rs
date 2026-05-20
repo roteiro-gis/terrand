@@ -56,9 +56,10 @@
 //!
 //! # Algorithms
 //!
-//! Surface analysis (slope, aspect, curvature, hillshade) uses the Horn (1981)
-//! 3x3 weighted gradient kernel with GDAL-compatible linear extrapolation at
-//! grid edges.
+//! Slope, aspect, and hillshade use the Horn (1981) 3x3 weighted gradient
+//! kernel with GDAL-compatible linear extrapolation at grid edges. Curvature
+//! uses Horn first-order gradients with the same edge extrapolation, plus
+//! finite-difference second derivatives clamped at grid edges.
 
 // Internal modules (not part of public API).
 mod kernel;
