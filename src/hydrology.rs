@@ -36,6 +36,7 @@
 use ndarray::Array2;
 use std::collections::VecDeque;
 
+use crate::error::{Error, Result};
 use crate::kernel::grid_map;
 
 // ---------------------------------------------------------------------------
@@ -97,6 +98,21 @@ fn downstream(fdir: &Array2<u8>, r: usize, c: usize, h: usize, w: usize) -> Opti
     } else {
         None
     }
+}
+
+fn validate_pour_points(pour_points: &[(usize, usize)], h: usize, w: usize) -> Result<()> {
+    for &(row, col) in pour_points {
+        if row >= h || col >= w {
+            return Err(Error::PourPointOutOfBounds {
+                row,
+                col,
+                height: h,
+                width: w,
+            });
+        }
+    }
+
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -273,16 +289,19 @@ pub fn flow_accumulation(fdir: &Array2<u8>) -> Array2<f64> {
 /// `pour_points` is a list of `(row, col)` outlet locations. Returns a grid
 /// where each cell is labeled with the 1-based index of the pour point it
 /// drains to, or 0 if it does not drain to any pour point.
-pub fn watershed(fdir: &Array2<u8>, pour_points: &[(usize, usize)]) -> Array2<i32> {
+///
+/// # Errors
+///
+/// Returns [`Error::PourPointOutOfBounds`] if any pour point is outside the
+/// flow-direction grid.
+pub fn watershed(fdir: &Array2<u8>, pour_points: &[(usize, usize)]) -> Result<Array2<i32>> {
     let (h, w) = fdir.dim();
+    validate_pour_points(pour_points, h, w)?;
+
     let mut labels = Array2::zeros((h, w));
 
     for (idx, &(pr, pc)) in pour_points.iter().enumerate() {
         let label = (idx + 1) as i32;
-        if pr >= h || pc >= w {
-            continue;
-        }
-
         let mut queue = VecDeque::new();
         labels[[pr, pc]] = label;
         queue.push_back((pr, pc));
@@ -305,7 +324,7 @@ pub fn watershed(fdir: &Array2<u8>, pour_points: &[(usize, usize)]) -> Array2<i3
         }
     }
 
-    labels
+    Ok(labels)
 }
 
 // ---------------------------------------------------------------------------
@@ -375,12 +394,26 @@ pub fn basin(fdir: &Array2<u8>) -> Array2<i32> {
 /// cells are 0.
 ///
 /// Uses iterative topological sorting to avoid stack overflow on large DEMs.
+///
+/// # Errors
+///
+/// Returns [`Error::ShapeMismatch`] if `fdir` and `accumulation` do not have
+/// the same shape.
 pub fn stream_order_strahler(
     fdir: &Array2<u8>,
     accumulation: &Array2<f64>,
     threshold: f64,
-) -> Array2<i32> {
+) -> Result<Array2<i32>> {
     let (h, w) = fdir.dim();
+    if accumulation.dim() != (h, w) {
+        return Err(Error::ShapeMismatch {
+            left: "fdir",
+            left_shape: (h, w),
+            right: "accumulation",
+            right_shape: accumulation.dim(),
+        });
+    }
+
     let mut order = Array2::zeros((h, w));
 
     // Identify stream cells.
@@ -455,7 +488,7 @@ pub fn stream_order_strahler(
         }
     }
 
-    order
+    Ok(order)
 }
 
 // ---------------------------------------------------------------------------
@@ -467,28 +500,30 @@ pub fn stream_order_strahler(
 ///
 /// `snap_distance` is measured in cells (Euclidean distance). Returns a new
 /// list of snapped `(row, col)` locations.
+///
+/// # Errors
+///
+/// Returns [`Error::PourPointOutOfBounds`] if any pour point is outside the
+/// accumulation grid.
 pub fn snap_pour_point(
     accumulation: &Array2<f64>,
     pour_points: &[(usize, usize)],
     snap_distance: usize,
-) -> Vec<(usize, usize)> {
+) -> Result<Vec<(usize, usize)>> {
     let (h, w) = accumulation.dim();
+    validate_pour_points(pour_points, h, w)?;
 
-    pour_points
+    let snapped = pour_points
         .iter()
         .map(|&(pr, pc)| {
             let mut best_r = pr;
             let mut best_c = pc;
-            let mut best_acc = if pr < h && pc < w {
-                accumulation[[pr, pc]]
-            } else {
-                f64::NEG_INFINITY
-            };
+            let mut best_acc = accumulation[[pr, pc]];
 
             let r_min = pr.saturating_sub(snap_distance);
-            let r_max = (pr + snap_distance + 1).min(h);
+            let r_max = pr.saturating_add(snap_distance).saturating_add(1).min(h);
             let c_min = pc.saturating_sub(snap_distance);
-            let c_max = (pc + snap_distance + 1).min(w);
+            let c_max = pc.saturating_add(snap_distance).saturating_add(1).min(w);
 
             let dist_sq = (snap_distance as f64) * (snap_distance as f64);
 
@@ -506,7 +541,9 @@ pub fn snap_pour_point(
 
             (best_r, best_c)
         })
-        .collect()
+        .collect();
+
+    Ok(snapped)
 }
 
 // ---------------------------------------------------------------------------
@@ -625,10 +662,24 @@ mod tests {
     fn watershed_labels_upstream() {
         let dem = slope_dem();
         let fdir = flow_direction(&dem);
-        let ws = watershed(&fdir, &[(4, 4)]);
+        let ws = watershed(&fdir, &[(4, 4)]).unwrap();
         assert_eq!(ws[[4, 4]], 1);
         let count = ws.iter().filter(|&&v| v == 1).count();
         assert!(count > 1, "watershed should contain multiple cells");
+    }
+
+    #[test]
+    fn watershed_rejects_out_of_bounds_pour_point() {
+        let fdir = Array2::from_elem((5, 5), 0);
+        assert!(matches!(
+            watershed(&fdir, &[(5, 0)]),
+            Err(Error::PourPointOutOfBounds {
+                row: 5,
+                col: 0,
+                height: 5,
+                width: 5,
+            })
+        ));
     }
 
     #[test]
@@ -651,7 +702,7 @@ mod tests {
         let dem = slope_dem();
         let fdir = flow_direction(&dem);
         let acc = flow_accumulation(&fdir);
-        let order = stream_order_strahler(&fdir, &acc, 3.0);
+        let order = stream_order_strahler(&fdir, &acc, 3.0).unwrap();
         for r in 0..5 {
             for c in 0..5 {
                 if acc[[r, c]] >= 3.0 {
@@ -665,15 +716,55 @@ mod tests {
     }
 
     #[test]
+    fn stream_order_rejects_shape_mismatch() {
+        let fdir = Array2::from_elem((3, 4), 0);
+        let acc = Array2::from_elem((3, 3), 1.0);
+
+        assert!(matches!(
+            stream_order_strahler(&fdir, &acc, 1.0),
+            Err(Error::ShapeMismatch {
+                left: "fdir",
+                left_shape: (3, 4),
+                right: "accumulation",
+                right_shape: (3, 3),
+            })
+        ));
+    }
+
+    #[test]
     fn snap_pour_point_finds_higher_acc() {
         let dem = slope_dem();
         let fdir = flow_direction(&dem);
         let acc = flow_accumulation(&fdir);
-        let snapped = snap_pour_point(&acc, &[(3, 3)], 2);
+        let snapped = snap_pour_point(&acc, &[(3, 3)], 2).unwrap();
         assert_eq!(snapped.len(), 1);
         assert!(
             acc[[snapped[0].0, snapped[0].1]] >= acc[[3, 3]],
             "snapped point should have >= accumulation"
         );
+    }
+
+    #[test]
+    fn snap_pour_point_rejects_out_of_bounds_pour_point() {
+        let acc = Array2::from_elem((5, 5), 1.0);
+        assert!(matches!(
+            snap_pour_point(&acc, &[(0, 5)], 2),
+            Err(Error::PourPointOutOfBounds {
+                row: 0,
+                col: 5,
+                height: 5,
+                width: 5,
+            })
+        ));
+    }
+
+    #[test]
+    fn snap_pour_point_handles_huge_snap_distance() {
+        let mut acc = Array2::from_elem((2, 2), 1.0);
+        acc[[1, 1]] = 10.0;
+
+        let snapped = snap_pour_point(&acc, &[(0, 0)], usize::MAX).unwrap();
+
+        assert_eq!(snapped, vec![(1, 1)]);
     }
 }
