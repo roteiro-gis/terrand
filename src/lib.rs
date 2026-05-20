@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 
 //! **terrand** — Pure-Rust terrain analysis on ndarray.
 //!
