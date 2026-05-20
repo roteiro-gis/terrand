@@ -1,13 +1,13 @@
 # terrand
 
-Terrain analysis utilities for regular 2D DEM grids.
+Pure-Rust terrain analysis for regular 2D DEM grids.
 
-Top-level functions compute DEM-derived rasters from `ndarray::Array2<f64>`:
-slope, aspect, hillshade, curvature, roughness metrics, D8 hydrology, viewshed,
-and contours.
+`terrand` is an ndarray-first layer for DEM-derived rasters and grid-space
+contours. It takes `ndarray::Array2<f64>` plus validated cell spacing and
+returns arrays or contour polylines; it does not read files or depend on GDAL.
 
-`CellSize` stores positive finite grid spacing. Raster I/O, GDAL integration,
-reprojection, resampling, and vertical datum handling are outside the crate.
+Use it for slope, aspect, hillshade, curvature, roughness metrics, D8
+hydrology, viewshed, and marching-squares contours.
 
 ## Installation
 
@@ -21,6 +21,15 @@ Or add the dependency directly:
 [dependencies]
 terrand = { package = "terrand-rs", version = "0.1" }
 ```
+
+Enable Rayon-backed per-cell loops with:
+
+```toml
+[dependencies]
+terrand = { package = "terrand-rs", version = "0.1", features = ["parallel"] }
+```
+
+## Example
 
 ```rust
 use ndarray::Array2;
@@ -43,6 +52,20 @@ watersheds, basin labels, Strahler stream order, and pour-point snapping. Use
 `terrand::contour` for marching-squares contour lines in grid coordinates
 `(col, row)`.
 
-DEM nodata policy: non-finite elevations represent nodata. Surface kernels
-generally propagate `NaN`; small-grid fallbacks return documented flat values.
-Hydrology uses numeric direction and label grids without a separate nodata mask.
+## Scope
+
+`CellSize` stores positive finite grid spacing. Horizontal units must match DEM
+elevation units for slope, curvature, hillshade, and viewshed. Raster I/O,
+reprojection, resampling, CRS handling, and vertical datum corrections are
+outside the crate.
+
+DEM nodata policy: use `NaN` for nodata. Surface kernels generally propagate
+`NaN`; small-grid fallbacks return documented flat values. Hydrology treats
+`NaN` as DEM nodata where documented, but flow-direction, accumulation, and
+label products are numeric grids without a separate nodata mask.
+
+The intended pure-Rust geospatial pipeline is:
+
+```text
+geotiff-rust -> ndarray DEM -> terrand -> eikonal/geotiff-rust
+```
