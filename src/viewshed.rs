@@ -97,29 +97,29 @@ pub fn viewshed(
 
     let observer_elev = dem[[observer_row, observer_col]] + config.observer_height;
 
-    // Determine search radius in cells.
-    let cell_ground = cell_size.x().max(cell_size.y());
-    let max_grid_radius = h.max(w) as isize;
-    let radius_cells = if config.max_distance.is_infinite() {
-        max_grid_radius
-    } else {
-        let cells = (config.max_distance / cell_ground).ceil();
-        if cells >= max_grid_radius as f64 {
-            max_grid_radius
-        } else {
-            cells as isize
-        }
-    };
+    // Determine a complete search envelope in cells. The final distance check
+    // in `cast_ray` still clips to the true Euclidean ground distance.
+    let (row_radius, col_radius) = search_radii(
+        h,
+        w,
+        observer_row,
+        observer_col,
+        cell_size,
+        config.max_distance,
+    );
 
-    // Build perimeter of the search square.
-    let r = radius_cells;
+    // Build perimeter of the search rectangle.
     let mut perimeter = Vec::new();
-    for d in -r..=r {
-        perimeter.push((-r, d)); // top row
-        perimeter.push((r, d)); // bottom row
-        if d != -r && d != r {
-            perimeter.push((d, -r)); // left column
-            perimeter.push((d, r)); // right column
+    for dc in -col_radius..=col_radius {
+        perimeter.push((-row_radius, dc)); // top row
+        if row_radius != 0 {
+            perimeter.push((row_radius, dc)); // bottom row
+        }
+    }
+    if col_radius != 0 {
+        for dr in (-row_radius + 1)..row_radius {
+            perimeter.push((dr, -col_radius)); // left column
+            perimeter.push((dr, col_radius)); // right column
         }
     }
 
@@ -152,6 +152,31 @@ pub fn viewshed(
     }
 
     Ok(result)
+}
+
+fn search_radii(
+    height: usize,
+    width: usize,
+    observer_row: usize,
+    observer_col: usize,
+    cell_size: CellSize,
+    max_distance: f64,
+) -> (isize, isize) {
+    let max_row_radius = observer_row.max(height - 1 - observer_row) as isize;
+    let max_col_radius = observer_col.max(width - 1 - observer_col) as isize;
+
+    if max_distance.is_infinite() {
+        return (max_row_radius, max_col_radius);
+    }
+
+    let row_radius = (max_distance / cell_size.y())
+        .ceil()
+        .min(max_row_radius as f64) as isize;
+    let col_radius = (max_distance / cell_size.x())
+        .ceil()
+        .min(max_col_radius as f64) as isize;
+
+    (row_radius, col_radius)
 }
 
 /// Observer state bundled for `cast_ray` to avoid too many arguments.
@@ -348,6 +373,30 @@ mod tests {
         let vis = viewshed(&dem, CellSize::square(1.0).unwrap(), 7, 8, &config).unwrap();
         assert_eq!(vis[[7, 8]], 1.0);
         assert_eq!(vis[[7, 13]], 0.0, "distant cell should not be visible");
+    }
+
+    #[test]
+    fn max_distance_uses_independent_radii_for_non_square_cells() {
+        let dem = Array2::from_elem((11, 11), 0.0);
+        let config = ViewshedConfig {
+            observer_height: 2.0,
+            max_distance: 5.0,
+            refraction_coeff: 0.0,
+            ..Default::default()
+        };
+
+        let vis = viewshed(&dem, CellSize::new(1.0, 10.0).unwrap(), 5, 5, &config).unwrap();
+
+        assert_eq!(
+            vis[[5, 10]],
+            1.0,
+            "cell five columns away should be inside the search envelope"
+        );
+        assert_eq!(
+            vis[[6, 5]],
+            0.0,
+            "cell one row away should still be clipped by ground distance"
+        );
     }
 
     #[test]
