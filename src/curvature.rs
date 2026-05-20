@@ -14,7 +14,8 @@
 //!   effects.
 //!
 //! All use the Horn (1981) kernel for first-order gradients and finite-difference
-//! second derivatives over the 3x3 neighborhood.
+//! second derivatives over the 3x3 neighborhood. First-order gradients use
+//! GDAL-compatible edge extrapolation; second derivatives clamp at grid edges.
 //!
 //! # NaN handling
 //!
