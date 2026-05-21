@@ -6,9 +6,11 @@ rust-version = "1.77"
 license = "MIT OR Apache-2.0"
 description = "Pure-Rust terrain analysis on ndarray: slope, aspect, curvature, hillshade, hydrology, viewshed, and contour generation"
 repository = "https://github.com/i-norden/terrand"
+readme = "README.md"
 documentation = "https://docs.rs/terrand-rs"
 keywords = ["terrain", "dem", "geospatial", "ndarray", "gis"]
 categories = ["science::geo", "algorithms"]
+exclude = [".github"]
 
 [lib]
 name = "terrand"
